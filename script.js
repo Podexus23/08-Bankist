@@ -153,7 +153,7 @@ const calcDisplaySummary = function (acc) {
     .filter(int => int >= 1)
     .reduce((acc, mov) => acc + mov, 0);
   const formattedInterest = formatCur(interest, acc.locale, acc.currency);
-  labelSumInterest.textContent = `${formattedInterest} EUR`;
+  labelSumInterest.textContent = `${formattedInterest}`;
 };
 
 const createUsernames = function (accs) {
@@ -173,30 +173,39 @@ const updateUI = acc => {
   calcDisplaySummary(acc);
 };
 
+const startLogOutTimer = () => {
+  let time = 120;
+
+  const tick = () => {
+    const min = String(Math.trunc(time / 60)).padStart(2, 0);
+    const sec = String(time % 60).padStart(2, 0);
+
+    labelTimer.textContent = `${min}:${sec}`;
+
+    if (time === 0) {
+      clearInterval(timer);
+      labelWelcome.textContent = `Login to get started`;
+      containerApp.style.opacity = 0;
+    }
+
+    time--;
+  };
+
+  tick();
+  timer = setInterval(tick, 1000);
+  return timer;
+};
+
 /////////////////
 
 //Event handler
-let currentAccount;
+let currentAccount, timer;
 //FAKE ALWAYS LOGGED IN
-currentAccount = account1;
-updateUI(currentAccount);
-containerApp.style.opacity = 100;
+// currentAccount = account1;
+// updateUI(currentAccount);
+// containerApp.style.opacity = 100;
 
 //Internalization API
-
-const now = new Date();
-const options = {
-  hour: 'numeric',
-  minute: 'numeric',
-  day: 'numeric',
-  month: 'numeric',
-  year: 'numeric',
-};
-
-labelDate.textContent = new Intl.DateTimeFormat(
-  currentAccount.locale,
-  options
-).format(now);
 
 btnLogin.addEventListener('click', e => {
   e.preventDefault();
@@ -215,6 +224,25 @@ btnLogin.addEventListener('click', e => {
     inputLoginUsername.value = inputLoginPin.value = '';
     // inputLoginPin.blur();
 
+    const now = new Date();
+    const options = {
+      hour: 'numeric',
+      minute: 'numeric',
+      day: 'numeric',
+      month: 'numeric',
+      year: 'numeric',
+    };
+
+    labelDate.textContent = new Intl.DateTimeFormat(
+      currentAccount.locale,
+      options
+    ).format(now);
+    if (timer) {
+      clearInterval(timer);
+    }
+
+    timer = startLogOutTimer();
+
     updateUI(currentAccount);
   }
 });
@@ -230,6 +258,8 @@ btnLoan.addEventListener('click', e => {
       currentAccount.movements.push(amount);
       currentAccount.movementsDates.push(new Date().toISOString());
       updateUI(currentAccount);
+      clearInterval(timer);
+      timer = startLogOutTimer();
     }, 2500);
   }
 });
@@ -254,6 +284,9 @@ btnTransfer.addEventListener('click', e => {
     receiverAcc.movementsDates.push(new Date().toISOString());
 
     updateUI(currentAccount);
+    //Reset timer
+    clearInterval(timer);
+    timer = startLogOutTimer();
   }
 });
 
